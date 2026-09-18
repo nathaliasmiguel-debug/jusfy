@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <style>
+    :root {
+      color-scheme: light;
+      --surface-1:      #fcfcfb;
+      --page:           #f2f3f5;
+      --text-primary:   #0b0b0b;
+      --text-secondary: #52514e;
+      --text-muted:     #898781;
+      --gridline:       #e1e0d9;
+      --border:         rgba(11,11,11,0.10);
+      --accent:         #2a78d6;
+      --accent-wash:    #eaf1fb;
+      --good:           #0ca30c;
+      --good-wash:      #e6f6e6;
+      --warning:        #fab219;
+      --warning-wash:   #fff6e3;
+      --violet:         #4a3aa7;
+      --violet-wash:    #eeecf9;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--page);
+      color: var(--text-primary);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+    #app { max-width: 1400px; margin: 0 auto; padding: 20px 24px 40px; }
+
+    /* ---------- Header ---------- */
+    .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+    .header h1 { font-size: 20px; margin: 0 0 4px; font-weight: 600; }
+    .header p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary);
+      border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; font-weight: 500;
+    }
+    .btn:hover { background: var(--accent-wash); border-color: var(--accent); }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover { background: #2266ba; }
+
+    /* ---------- KPI tiles ---------- */
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .kpi {
+      background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .kpi .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+    .kpi .value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+    .kpi .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .kpi.accent .value { color: var(--accent); }
+    .kpi.good .value { color: var(--good); }
+
+    /* ---------- Controls ---------- */
+    .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .controls input[type="search"] {
+      flex: 1 1 220px; min-width: 180px; padding: 8px 12px; border-radius: 8px;
+      border: 1px solid var(--border); font-size: 13px; background: var(--surface-1);
+    }
+    .controls select {
+      padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface-1); font-size: 13px;
+    }
+    .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .view-toggle button {
+      border: none; background: var(--surface-1); padding: 8px 14px; font-size: 13px; cursor: pointer; color: var(--text-secondary);
+    }
+    .view-toggle button.active { background: var(--accent); color: #fff; font-weight: 600; }
+
+    /* ---------- Badges ---------- */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
+      padding: 4px 8px; border-radius: 999px; white-space: nowrap;
+    }
+    .badge.good { background: var(--good-wash); color: #0a7a0a; }
+    .badge.accent { background: var(--accent-wash); color: #1c5cab; }
+    .badge.violet { background: var(--violet-wash); color: var(--violet); }
+
+    /* ---------- Card grid ---------- */
+    #cardsView { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .card {
+      background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .card-photo {
+      position: relative; aspect-ratio: 16 / 10; background: #eceae4;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .card-photo .placeholder { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12px; padding: 12px; text-align: center; }
+    .card-photo .placeholder .icon { font-size: 30px; }
+    .card-badges { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+
+    .card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .card-title { font-size: 15px; font-weight: 700; margin: 0; }
+    .card-model {
+      font-size: 12px; color: var(--text-secondary); margin: 0; min-height: 16px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    .price-row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 2px; }
+    .price-row .total { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+    .price-row .rank { font-size: 11px; color: var(--text-muted); }
+
+    .breakdown { display: flex; gap: 10px; font-size: 11px; color: var(--text-secondary); border-top: 1px solid var(--gridline); border-bottom: 1px solid var(--gridline); padding: 8px 0; }
+    .breakdown div { flex: 1; }
+    .breakdown b { display: block; color: var(--text-primary); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+    .meta { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 12px; color: var(--text-secondary); }
+    .meta .item { display: flex; align-items: center; gap: 4px; }
+    .meta .yes { color: #0a7a0a; }
+    .meta .no { color: var(--text-muted); }
+
+    .note { font-size: 12px; color: var(--text-secondary); line-height: 1.4; max-height: 54px; overflow: hidden; }
+
+    .card-footer { margin-top: auto; display: flex; gap: 8px; }
+    .card-footer a.btn { flex: 1; text-align: center; text-decoration: none; }
+
+    /* ---------- Table view ---------- */
+    #tableView { display: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      position: sticky; top: 0; background: var(--surface-1); text-align: left; padding: 10px 12px;
+      border-bottom: 1px solid var(--gridline); font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em;
+      color: var(--text-muted); white-space: nowrap;
+    }
+    tbody td { padding: 10px 12px; border-bottom: 1px solid var(--gridline); vertical-align: top; }
+    tbody tr:hover { background: var(--accent-wash); }
+    td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    td.thumb img { width: 48px; height: 32px; object-fit: cover; border-radius: 4px; }
+    td.thumb .none { width: 48px; height: 32px; border-radius: 4px; background: #eceae4; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-muted); }
+
+    /* ---------- Notes ---------- */
+    .notes-panel { margin-top: 24px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+    .notes-panel h2 { font-size: 14px; margin: 0 0 10px; }
+    .notes-panel ul { margin: 0; padding-left: 18px; }
+    .notes-panel li { margin-bottom: 6px; font-size: 13px; color: var(--text-secondary); }
+    .notes-panel li b { color: var(--text-primary); }
+    .notes-panel .author { margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+
+    .state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+
+    @media (max-width: 720px) {
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+      #app { padding: 16px 12px 32px; }
+    }
+    .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--gridline); border-top-color: var(--accent); animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <div>
+        <h1>Painel Executivo — Cabine Acústica (Phone Booth)</h1>
+        <p>Entrega e instalação em Santa Maria/RS · comparação das propostas recebidas</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn" id="openSheetBtn">📄 Abrir planilha</button>
+        <button class="btn primary" id="refreshBtn">🔄 Atualizar</button>
+      </div>
+    </div>
+
+    <div id="loading" class="state">
+      <div class="spinner"></div>
+      Carregando propostas e buscando fotos dos fornecedores…
+    </div>
+
+    <div id="content" style="display:none;">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="label">Propostas recebidas</div>
+          <div class="value" id="kpiCount">–</div>
+        </div>
+        <div class="kpi good">
+          <div class="label">Menor valor total</div>
+          <div class="value" id="kpiMin">–</div>
+          <div class="sub" id="kpiMinSub"></div>
+        </div>
+        <div class="kpi accent">
+          <div class="label">Entrega mais rápida</div>
+          <div class="value" id="kpiPrazo">–</div>
+          <div class="sub" id="kpiPrazoSub"></div>
+        </div>
+        <div class="kpi">
+          <div class="label">Valor médio</div>
+          <div class="value" id="kpiAvg">–</div>
+          <div class="sub" id="kpiRangeSub"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <input type="search" id="searchInput" placeholder="Buscar fornecedor ou modelo…">
+        <select id="sortSelect">
+          <option value="score">Ordenar: recomendado</option>
+          <option value="priceAsc">Ordenar: menor preço</option>
+          <option value="priceDesc">Ordenar: maior preço</option>
+          <option value="prazoAsc">Ordenar: prazo mais rápido</option>
+          <option value="nameAsc">Ordenar: fornecedor (A–Z)</option>
+        </select>
+        <div class="view-toggle">
+          <button id="cardsBtn" class="active">🗂 Cards</button>
+          <button id="tableBtn">📋 Tabela</button>
+        </div>
+      </div>
+
+      <div id="cardsView"></div>
+
+      <div id="tableView">
+        <table>
+          <thead>
+            <tr>
+              <th>Foto</th>
+              <th>Fornecedor</th>
+              <th>Modelo</th>
+              <th class="num">Cabine</th>
+              <th class="num">Frete</th>
+              <th class="num">Montagem</th>
+              <th class="num">Total</th>
+              <th>Prazo</th>
+              <th>Preta?</th>
+              <th>Mesa?</th>
+              <th>Proposta</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="notes-panel" id="notesPanel" style="display:none;">
+        <h2>✅ Confirmações registradas na planilha</h2>
+        <ul id="notesList"></ul>
+        <div class="author" id="notesAuthor"></div>
+      </div>
+    </div>
+
+    <div id="errorState" class="state" style="display:none;"></div>
+  </div>
+
+  <script>
+    var DATA = null;
+    var currentView = 'cards';
+
+    var currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+
+    function fmtCurrency(v) {
+      return (v || v === 0) ? currency.format(v) : '—';
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function load() {
+      google.script.run
+        .withSuccessHandler(onData)
+        .withFailureHandler(onError)
+        .getDashboardData();
+    }
+
+    function onError(err) {
+      document.getElementById('loading').style.display = 'none';
+      var box = document.getElementById('errorState');
+      box.style.display = 'block';
+      box.textContent = 'Não foi possível carregar o painel: ' + (err && err.message ? err.message : err);
+    }
+
+    function onData(data) {
+      DATA = data;
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      renderKpis(data.summary);
+      renderNotes(data.notes);
+      renderAll();
+    }
+
+    function renderKpis(s) {
+      document.getElementById('kpiCount').textContent = s.total;
+      document.getElementById('kpiMin').textContent = fmtCurrency(s.valorMin);
+      var minSupplier = DATA.suppliers.filter(function (x) { return x.valorTotal === s.valorMin; })[0];
+      document.getElementById('kpiMinSub').textContent = minSupplier ? minSupplier.fornecedor : '';
+      document.getElementById('kpiPrazo').textContent = s.prazoMin != null ? s.prazoMin + ' dias' : '—';
+      var fastSupplier = DATA.suppliers.filter(function (x) { return x.prazoDias === s.prazoMin; })[0];
+      document.getElementById('kpiPrazoSub').textContent = fastSupplier ? fastSupplier.fornecedor : '';
+      document.getElementById('kpiAvg').textContent = fmtCurrency(s.valorMedio);
+      document.getElementById('kpiRangeSub').textContent = (s.valorMin != null && s.valorMax != null)
+        ? ('Faixa: ' + fmtCurrency(s.valorMin) + ' – ' + fmtCurrency(s.valorMax)) : '';
+    }
+
+    function renderNotes(notes) {
+      if (!notes || !notes.perguntas || !notes.perguntas.length) return;
+      var panel = document.getElementById('notesPanel');
+      panel.style.display = 'block';
+      var list = document.getElementById('notesList');
+      list.innerHTML = notes.perguntas.map(function (p) {
+        return '<li><b>' + escapeHtml(p.pergunta) + '</b> — ' + escapeHtml(p.resposta) + '</li>';
+      }).join('');
+      document.getElementById('notesAuthor').textContent = notes.autor ? ('Registrado por: ' + notes.autor) : '';
+    }
+
+    function getFiltered() {
+      var q = document.getElementById('searchInput').value.trim().toLowerCase();
+      var list = DATA.suppliers.filter(function (s) {
+        if (!q) return true;
+        return (s.fornecedor + ' ' + s.modelo).toLowerCase().indexOf(q) !== -1;
+      });
+      var sortBy = document.getElementById('sortSelect').value;
+      list = list.slice().sort(function (a, b) {
+        switch (sortBy) {
+          case 'priceAsc': return (a.valorTotal || Infinity) - (b.valorTotal || Infinity);
+          case 'priceDesc': return (b.valorTotal || -Infinity) - (a.valorTotal || -Infinity);
+          case 'prazoAsc': return (a.prazoDias == null ? Infinity : a.prazoDias) - (b.prazoDias == null ? Infinity : b.prazoDias);
+          case 'nameAsc': return a.fornecedor.localeCompare(b.fornecedor, 'pt-BR');
+          default:
+            var sa = a.badgeRecomendado ? 0 : (a.score || 99);
+            var sb = b.badgeRecomendado ? 0 : (b.score || 99);
+            return sa - sb;
+        }
+      });
+      return list;
+    }
+
+    function renderAll() {
+      var list = getFiltered();
+      renderCards(list);
+      renderTable(list);
+    }
+
+    function badgesHtml(s) {
+      var out = '';
+      if (s.badgeRecomendado) out += '<span class="badge violet">⭐ Recomendado</span>';
+      if (s.badgeMenorPreco) out += '<span class="badge good">💰 Menor preço</span>';
+      if (s.badgeMaisRapido) out += '<span class="badge accent">⚡ Mais rápido</span>';
+      return out;
+    }
+
+    function photoHtml(s) {
+      if (s.imagem) {
+        return '<img src="' + escapeHtml(s.imagem) + '" alt="' + escapeHtml(s.fornecedor) +
+          '" loading="lazy" data-fallback-link="' + escapeHtml(s.link || '') + '" onerror="imgError(this)">';
+      }
+      return placeholderHtml(s.link);
+    }
+
+    function placeholderHtml(link) {
+      var linkHtml = link ? ('<a href="' + escapeHtml(link) + '" target="_blank">Ver produto →</a>') : 'Sem link';
+      return '<div class="placeholder"><span class="icon">🛋️</span>Foto indisponível<br>' + linkHtml + '</div>';
+    }
+
+    function imgError(imgEl) {
+      var link = imgEl.getAttribute('data-fallback-link') || '';
+      var wrap = imgEl.parentElement;
+      if (wrap) wrap.innerHTML = placeholderHtml(link);
+    }
+
+    function thumbError(imgEl) {
+      var wrap = imgEl.parentElement;
+      if (wrap) wrap.innerHTML = '<div class="none">🛋️</div>';
+    }
+
+    function renderCards(list) {
+      var el = document.getElementById('cardsView');
+      if (!list.length) {
+        el.innerHTML = '<div class="state">Nenhum fornecedor encontrado.</div>';
+        return;
+      }
+      el.innerHTML = list.map(function (s) {
+        return '' +
+          '<div class="card">' +
+            '<div class="card-photo">' +
+              '<div class="card-badges">' + badgesHtml(s) + '</div>' +
+              photoHtml(s) +
+            '</div>' +
+            '<div class="card-body">' +
+              '<p class="card-title">' + escapeHtml(s.fornecedor) + '</p>' +
+              '<p class="card-model" title="' + escapeHtml(s.modelo) + '">' + escapeHtml(s.modelo) + '</p>' +
+              '<div class="price-row">' +
+                '<span class="total">' + fmtCurrency(s.valorTotal) + '</span>' +
+                (s.priceRank ? '<span class="rank">#' + s.priceRank + ' em preço</span>' : '') +
+              '</div>' +
+              '<div class="breakdown">' +
+                '<div>Cabine<b>' + fmtCurrency(s.valorCabine) + '</b></div>' +
+                '<div>Frete<b>' + fmtCurrency(s.frete) + '</b></div>' +
+                '<div>Montagem<b>' + fmtCurrency(s.montagem) + '</b></div>' +
+              '</div>' +
+              '<div class="meta">' +
+                '<span class="item">⏱ ' + escapeHtml(s.prazoTexto || '—') + '</span>' +
+                '<span class="item ' + (isYes(s.cabinePreta) ? 'yes' : 'no') + '">' + (isYes(s.cabinePreta) ? '✔' : '✘') + ' Cabine preta</span>' +
+                '<span class="item ' + (isYes(s.mesaInclusa) ? 'yes' : 'no') + '">' + (isYes(s.mesaInclusa) ? '✔' : '✘') + ' Mesa inclusa</span>' +
+              '</div>' +
+              (s.nota ? '<div class="note" title="' + escapeHtml(s.nota) + '">' + escapeHtml(s.nota) + '</div>' : '') +
+              '<div class="card-footer">' +
+                (s.link ? '<a class="btn primary" href="' + escapeHtml(s.link) + '" target="_blank">Ver proposta →</a>' : '<span class="btn" style="flex:1;text-align:center;opacity:.5;">Sem link</span>') +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    function isYes(v) {
+      return /^sim/i.test(String(v || '').trim());
+    }
+
+    function renderTable(list) {
+      var body = document.getElementById('tableBody');
+      body.innerHTML = list.map(function (s) {
+        var thumb = s.imagem
+          ? '<img src="' + escapeHtml(s.imagem) + '" onerror="thumbError(this)">'
+          : '<div class="none">🛋️</div>';
+        return '<tr>' +
+          '<td class="thumb">' + thumb + '</td>' +
+          '<td>' + escapeHtml(s.fornecedor) + (s.badgeRecomendado ? ' ⭐' : '') + '</td>' +
+          '<td>' + escapeHtml(s.modelo) + '</td>' +
+          '<td class="num">' + fmtCurrency(s.valorCabine) + '</td>' +
+          '<td class="num">' + fmtCurrency(s.frete) + '</td>' +
+          '<td class="num">' + fmtCurrency(s.montagem) + '</td>' +
+          '<td class="num"><b>' + fmtCurrency(s.valorTotal) + '</b></td>' +
+          '<td>' + escapeHtml(s.prazoTexto || '—') + '</td>' +
+          '<td>' + (isYes(s.cabinePreta) ? '✔ Sim' : '✘ Não') + '</td>' +
+          '<td>' + (isYes(s.mesaInclusa) ? '✔ Sim' : '✘ Não') + '</td>' +
+          '<td>' + (s.link ? '<a href="' + escapeHtml(s.link) + '" target="_blank">Abrir →</a>' : '—') + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderAll);
+    document.getElementById('sortSelect').addEventListener('change', renderAll);
+    document.getElementById('refreshBtn').addEventListener('click', function () {
+      document.getElementById('content').style.display = 'none';
+      document.getElementById('loading').style.display = 'block';
+      load();
+    });
+    document.getElementById('openSheetBtn').addEventListener('click', function () {
+      if (DATA && DATA.sheetUrl) window.open(DATA.sheetUrl, '_blank');
+    });
+    document.getElementById('cardsBtn').addEventListener('click', function () {
+      currentView = 'cards';
+      document.getElementById('cardsBtn').classList.add('active');
+      document.getElementById('tableBtn').classList.remove('active');
+      document.getElementById('cardsView').style.display = 'grid';
+      document.getElementById('tableView').style.display = 'none';
+    });
+    document.getElementById('tableBtn').addEventListener('click', function () {
+      currentView = 'table';
+      document.getElementById('tableBtn').classList.add('active');
+      document.getElementById('cardsBtn').classList.remove('active');
+      document.getElementById('cardsView').style.display = 'none';
+      document.getElementById('tableView').style.display = 'block';
+    });
+
+    load();
+  </script>
+</body>
+</html>
